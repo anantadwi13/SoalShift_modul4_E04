@@ -75,13 +75,16 @@ static int xmp_getattr(const char *path, struct stat *stbuf)
 static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		       off_t offset, struct fuse_file_info *fi)
 {
-  char fpath[1000];
-	if(strcmp(path,"/") == 0)
+  char fpath[1000], temp[1000];
+	strcpy(temp, path);
+	decrypt(temp);
+
+	if(strcmp(temp,"/") == 0)
 	{
 		path=dirpath;
 		sprintf(fpath,"%s",path);
 	}
-	else sprintf(fpath, "%s%s",dirpath,path);
+	else sprintf(fpath, "%s%s",dirpath,temp);
 	int res = 0;
 
 	DIR *dp;
