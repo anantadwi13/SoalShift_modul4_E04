@@ -8,10 +8,10 @@
 #include <errno.h>
 #include <sys/time.h>
 
-static const char *dirpath = "/home/arisatox/Downloads";
+static const char *dirpath = "/home/arisatox/SoalShift_modul4_E04/shift4";
 char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
 
-char encrypt(char *x)
+char decrypt(char *x)
 {
 		int ind, i;
 		char *ptr;
@@ -30,7 +30,7 @@ char encrypt(char *x)
 		return *x;
 }
 
-char decrypt(char *y)
+char encrypt(char *y)
 {
 		int ind, i;
 		char *ptr;
@@ -51,6 +51,28 @@ char decrypt(char *y)
 		}
 
 		return *y;
+}
+
+static int xmp_mkdir(const char *path, mode_t mode)
+{
+	char fpath[1000], temp[1000];
+	strcpy(temp, path);
+	decrypt(temp);
+
+	if(strcmp(temp,"/") == 0)
+	{
+		path=dirpath;
+		sprintf(fpath,"%s",path);
+	}
+	else sprintf(fpath, "%s%s",dirpath,temp);
+
+	int res;
+
+	res = mkdir(fpath, mode);
+	if (res == -1)
+		return -errno;
+
+	return 0;
 }
 
 static int xmp_getattr(const char *path, struct stat *stbuf)
@@ -75,7 +97,7 @@ static int xmp_getattr(const char *path, struct stat *stbuf)
 static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		       off_t offset, struct fuse_file_info *fi)
 {
-  char fpath[1000], temp[1000];
+  	char fpath[1000], temp[1000];
 	strcpy(temp, path);
 	decrypt(temp);
 
@@ -116,13 +138,16 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 		    struct fuse_file_info *fi)
 {
-  char fpath[1000];
+  char fpath[1000], temp[1000];
+	strcpy(temp, path);
+	decrypt(temp);
+
 	if(strcmp(path,"/") == 0)
 	{
 		path=dirpath;
 		sprintf(fpath,"%s",path);
 	}
-	else sprintf(fpath, "%s%s",dirpath,path);
+	else sprintf(fpath, "%s%s",dirpath,temp);
 	int res = 0;
   int fd = 0 ;
 
@@ -143,6 +168,7 @@ static struct fuse_operations xmp_oper = {
 	.getattr	= xmp_getattr,
 	.readdir	= xmp_readdir,
 	.read		= xmp_read,
+	.mkdir		= xmp_mkdir,
 };
 
 
