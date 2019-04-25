@@ -7,9 +7,11 @@
 #include <dirent.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <pthread.h>
 
-static const char *dirpath = "/home/arisatox/SoalShift_modul4_E04/shift4";
+static const char *dirpath = "/home/arisatox/shift4";
 char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
+pthread_t tid;
 
 char decrypt(char *x)
 {
@@ -171,9 +173,88 @@ static struct fuse_operations xmp_oper = {
 	.mkdir		= xmp_mkdir,
 };
 
+int getLastCharPos(char *str, char chr){
+	char *posChar = NULL;
+	char *tempPosChar = strchr(str, chr);
+	
+	while(tempPosChar != NULL){
+		posChar = tempPosChar;
+
+		tempPosChar = strchr(tempPosChar+1, chr);
+	}
+	if(posChar==NULL)
+		return 0;
+
+	return (int) (posChar-str);
+}
+
+void* joinVideo(){
+	char videoPath[1000], filePath[1000], ch;
+	sprintf(videoPath, "%s/g[xO#",dirpath);
+	mkdir(videoPath, 0777);
+
+	DIR *dirvideo;
+	struct dirent *de, **fileList;
+	dirvideo = opendir(videoPath);
+	if (dirvideo == NULL) {
+		return NULL;
+	}
+	int n = scandir(dirpath, &fileList, 0, alphasort);
+	int i = 0;
+	while(i < n){
+		de = fileList[i];
+		i++;
+		int lastDotChar = getLastCharPos(de->d_name, '.');
+		if (de->d_type != DT_REG)
+			continue;
+		
+		if (lastDotChar==0 || strlen(de->d_name)<4 || !((de->d_name[lastDotChar-3]=='m' && de->d_name[lastDotChar-2]=='k' && de->d_name[lastDotChar-1]=='v') || 
+			(de->d_name[lastDotChar-3]=='m' && de->d_name[lastDotChar-2]=='p' && de->d_name[lastDotChar-1]=='4')))
+			continue;
+
+		sprintf(filePath, "%s/%s", dirpath, de->d_name);
+		FILE* source = fopen(filePath, "r");
+
+		de->d_name[lastDotChar] = '\0';
+		sprintf(filePath, "%s/%s", videoPath, de->d_name);
+		FILE* target = fopen(filePath, "a");
+
+		while ((ch = fgetc(source)) != EOF)
+			//if (ch!='\n') 
+				fputc(ch, target);
+
+		fclose(source);
+		fclose(target);
+	}
+	
+	return NULL;
+}
+
+void deleteVideo(){
+	char videoPath[1000], filePath[1000];
+	sprintf(videoPath, "%s/g[xO#",dirpath);
+
+	DIR *dirVideo;
+	struct dirent *de;
+	dirVideo = opendir(videoPath);
+	if (dirVideo == NULL) {
+		return;
+	}
+
+	while((de = readdir(dirVideo)) != NULL){
+		if (de->d_type == DT_REG) {
+			sprintf(filePath, "%s/%s", videoPath, de->d_name);
+			remove(filePath);
+		}
+	}
+	remove(videoPath);
+}
 
 int main(int argc, char *argv[])
 {
 	umask(0);
-	return fuse_main(argc, argv, &xmp_oper, NULL);
+	pthread_create(&tid,NULL,&joinVideo,NULL);
+	fuse_main(argc, argv, &xmp_oper, NULL);
+	deleteVideo();
+	return 1;
 }
