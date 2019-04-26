@@ -18,7 +18,8 @@ char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>
 
 setelah itu, membuat fungsi untuk encrypt dan decrypt nama file. File akan terenkripsi jika dalam keadaan normal dan akan terdekripsi
 saat di mount di FUSE.
-
+Encrypt:
+```
 char encrypt(char *x)
 {
 		int ind, i;
@@ -37,7 +38,9 @@ char encrypt(char *x)
 
 		return *x;
 }
-
+```
+Decrypt:
+```
 char decrypt(char *y)
 {
 		int ind, i;
@@ -60,7 +63,68 @@ char decrypt(char *y)
 
 		return *y;
 }
+```
 
 Fungsi encrypt dan decrypt ini akan dipakai di dalam fungsi-fungsi FUSE yang lainnya. Contohnya saja adalah create (untuk touch),
 mkdir, utimens, rmdir, dsb. Tujuannya adalah untuk mengenkripsi nama-nama file pada saat tidak di mount. Kemudian pada saat di mount akan
 di decrypt agar terlihat seperti semula.
+
+Jadi cara encrypt nya adalah menggunakan strchr untuk mendapatkan index huruf yang akan dienkripsi. Kemudian akan dilihat key nya, dan pada saat mengenkripsi, index tersebut akan ditambah dengan key agar bergerak ke kanan. Apabila lebih dari batasnya, akan mulai dari paling kiri. Sehingga caranya adalah dengan menggunakan modulo. Hal yang sama dilakukan juga untuk decrypt hanya saja dikurangi dan tidak ditambah agar bergerak ke kiri.\
+
+
+4.
+Pada folder YOUTUBER, setiap membuat folder permission foldernya akan otomatis menjadi 750. Juga ketika membuat file permissionnya akan otomatis menjadi 640 dan ekstensi filenya akan bertambah “.iz1”. File berekstensi “.iz1” tidak bisa diubah permissionnya dan memunculkan error bertuliskan “File ekstensi iz1 tidak boleh diubah permissionnya.”
+
+Jawab:
+
+Untuk membuat folder youtuber, menggunakan fungsi mkdir yang sudah diimplementasikan sebelumnya. Pada saat mkdir, dilakukan enkripsi terlebih dahulu dengan cara:
+
+char fpath[1000], temp[1000];
+strcpy(temp, path);
+encrypt(temp);
+
+```
+if(strcmp(temp,"/") == 0)
+{
+	path=dirpath;
+	sprintf(fpath,"%s",path);
+}
+else sprintf(fpath, "%s%s",dirpath,temp);
+```
+
+Kemudian, jika di dalam folder YOUTUBER tersebut akan dibuat folder, permissionnya akan berubah otomatis menjadi 750. Di dalam mkdir, diberi kondisi if untuk mengecek apakah folder tersebut berada di dalam folder YOUTUBER atau tidak.
+
+```
+if(strstr(path,"/YOUTUBER") != 0)
+{
+	res = mkdir(fpath, 0750);
+}
+else
+{
+	res = mkdir(fpath, mode);
+}
+```
+
+0750 disana yang dimaksud adalah permissionnya. Mkdir memiliki argument mode yang bertujuan untuk menentukan permission pada saat pertama kali dibuat. Jika dalam file YOUTUBER, maka otomatis pada saat dibuat, folder tersebut akan memiliki permission 750.
+
+Kemudian untuk file, permissionnya otomatis dibuat menjadi 640 dan juga ditambahi .iz1 sebagai extensionnya. Untuk menambahi permission caranya adalah:
+```
+if(strstr(path,"/YOUTUBER") != 0)
+{
+	res = open(fpath, fi->flags, 0640 );
+}
+else
+{
+	res = open(fpath, fi->flags, mode);
+}
+```
+
+Kemudian untuk menambahkan extension .iz1 akan digunakan pengecekan ini saat sebelum encrypt:
+
+```
+if(strstr(path,"/YOUTUBER") != 0)
+{
+	strcat(path,".iz1");
+}
+```
+
