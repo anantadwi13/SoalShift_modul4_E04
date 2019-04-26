@@ -130,3 +130,28 @@ if(strstr(path,"/YOUTUBER") != 0)
 ```
 Tujuannya adalah untuk menambahkan .iz1 ke file yang ada di dalam folder YOUTUBER
 
+Kemudian, dalam chmod ditambahi kondisi lagi agar file berekstensi .iz1 tidak bisa di chmod. Caranya adalah:
+
+if(strstr(path,"/YOUTUBER") != 0 && strstr(path,".iz1") != 0)
+{
+	pid_t child_id;
+
+	child_id = fork();
+
+	if (child_id == 0) 
+	{
+		// this is child
+
+		char *argv[] = {"zenity", "--error", "--text", "File ekstensi iz1 tidak boleh diubah permissionnya.", NULL};
+		execv("/usr/bin/zenity", argv);
+	} 
+	else 
+	{
+		// this is parent
+
+		return 0;
+	}
+
+}
+
+Digunakan fork untuk bisa melakukan exec di child nya. Untuk menampilkan file error, maka digunakan zenity. Zenity nanti akan mengeluarkan popup error.
