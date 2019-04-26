@@ -15,7 +15,7 @@
 #include <time.h>
 
 int key;
-static const char *dirpath = "/home/arisatox/Source";
+static const char *dirpath = "/home/arisatox/shift4";
 char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
 pthread_t tid;
 
@@ -277,9 +277,75 @@ static int xmp_unlink(const char *path)
 	}
 	else sprintf(fpath, "%s%s",dirpath,temp);
 
-	int res;
+	int res, isFile, status;
+
+
+	//-----------------------SOAL NO 5
+
+	isFile = access(fpath, F_OK);
+
+
+	//printf("====================UNLINK=======%s  ====  %s\n", path, fpath);
+	if(isFile<0)				//JIKA BUKAN FILE
+		return 0;
+	printf("====================UNLINK=======%s  ====  %s\n", path, fpath);
+	char backup[] = "Backup", pathBackup[1000];
+	char command[1000], timestamp[100], namaFileZip[1000], namaFile[1000], ext[1000],
+			namaFileWithoutExt[1000], pathNow[1000], namaRecycleBin[]="RecycleBin";
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	sprintf(timestamp, "%04d-%02d-%02d_%02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+
+	encrypt(backup);
+	strncpy(pathBackup, path, getLastCharPos(path, '/'));
+	pathBackup[getLastCharPos(path, '/')] = '\0';
+	sprintf(temp, "%s/%s", pathBackup, backup);
+	strcpy(pathBackup, temp);
+	//sprintf(temp, "%s%s", dirpath, pathBackup);
+	
+	//decrypt(path);
+	int posSlash = getLastCharPos(path, '/');
+	int posDot = getLastCharPos(path, '.');
+	
+	if (posDot==0)
+		posDot = strlen(path);
+	else{
+		strcpy(ext, path+posDot);
+		if (strcmp(ext, ".swp")==0)		//PREVENT .swp file to load
+		{
+			res = unlink(fpath);
+			
+			if (res == -1)
+				return -errno;
+			return 0;
+		}
+	}
+	strcpy(namaFile, path+posSlash+1);
+	strncpy(namaFileWithoutExt, path+posSlash+1, posDot-(posSlash+1));
+	namaFileWithoutExt[posDot-(posSlash+1)] = '\0';
+
+	strncpy(temp, path, getLastCharPos(path, '/'));
+	temp[getLastCharPos(path, '/')] = '\0';
+	sprintf(pathNow, "%s%s", dirpath, temp);
+
+
+	sprintf(namaFileZip, "%s_deleted_%s.zip\0", namaFileWithoutExt, timestamp);
+	encrypt(namaFileZip);
+	encrypt(namaRecycleBin);
+	encrypt(namaFile);
+	encrypt(namaFileWithoutExt);
+	sprintf(command, "cd %s && mkdir -p '%s' && zip '%s/%s' '%s' '%s/%s'* && rm -f '%s/%s'*", pathNow, namaRecycleBin,namaRecycleBin, namaFileZip, namaFile, backup, namaFileWithoutExt, backup, namaFileWithoutExt);
+
+	printf("=================COMMAND=======%s\n", command);
+	if (fork()==0)
+		execl("/bin/sh","/bin/sh", "-c", command, NULL);
+
+	while((wait(&status))>0);
+	//-----------------------SOAL NO 5
 
 	res = unlink(fpath);
+	
 	if (res == -1)
 		return -errno;
 
