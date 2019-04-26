@@ -12,10 +12,26 @@
 #include <pthread.h>
 #include <pwd.h>
 #include <grp.h>
+#include <time.h>
 
 static const char *dirpath = "/home/arisatox/shift4";
 char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
 pthread_t tid;
+
+int getLastCharPos(char *str, char chr){
+	char *posChar = NULL;
+	char *tempPosChar = strchr(str, chr);
+
+ 	while(tempPosChar != NULL){
+		posChar = tempPosChar;
+
+ 		tempPosChar = strchr(tempPosChar+1, chr);
+	}
+	if(posChar==NULL)
+		return 0;
+
+ 	return (int) (posChar-str);
+}
 
 char encrypt(char *x)
 {
@@ -442,6 +458,60 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 		res = -errno;
 
 	close(fd);
+
+	encrypt(path);
+	sprintf(temp, "%s/%s", dirpath,path);
+	if(access(temp, R_OK)<0)				//JIKA FILE TIDAK ADA
+		return res;
+
+	printf("===============FILEPATH========%s\n", path);
+	char backup[] = "Backup";
+	encrypt(backup);
+	sprintf(temp, "%s/%s", dirpath, backup);
+	mkdir(temp, 0777);
+
+
+	decrypt(path);
+	char filePathWithoutExt[1000], ext[100], timestamp[1000], fileNameBackup[1000], ch;
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	sprintf(timestamp, "%d-%d-%d_%02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+	int posSlash = getLastCharPos(path, '/');
+	int posDot = getLastCharPos(path, '.');
+	int lenPath = strlen(path);
+	
+	if (posDot==0) {
+		posDot = strlen(path);
+		ext[0] = '\0';
+	}
+	else{
+		strcpy(ext, path+posDot);
+		if (strcmp(ext, ".swp")==0)		//PREVENT .swp file to load
+			return res;
+	}
+	strncpy(filePathWithoutExt, path+posSlash+1, posDot-(posSlash+1));
+	filePathWithoutExt[posDot-(posSlash+1)] = '\0';
+	
+	sprintf(fileNameBackup,"%s_%s%s", filePathWithoutExt, timestamp, ext);
+	// printf("===============PATH========%s\n", path);
+	// printf("===============PATH========%d=====%d\n", posSlash, posDot);
+	printf("===============FILEPATH EDIT=======%s\n", fileNameBackup);
+	encrypt(fileNameBackup);
+	encrypt(path);
+	sprintf(temp, "%s%s", dirpath, path);
+	printf("==========DIR SOURCE========%s\n", temp);
+	FILE *source = fopen(temp, "r");
+
+	sprintf(temp, "%s/%s/%s", dirpath, backup, fileNameBackup);
+	//printf("==========DIR TARGET========%s\n", temp);
+	FILE *target = fopen(temp, "w");
+
+	while ((ch = fgetc(source)) != EOF)
+		fprintf(target, "%c", ch);
+
+	fclose(target);
+	fclose(source);
 	return res;
 }
 
@@ -458,21 +528,6 @@ static struct fuse_operations xmp_oper = {
 	.write		= xmp_write,
 	.truncate	= xmp_truncate,
 };
-
-int getLastCharPos(char *str, char chr){
-	char *posChar = NULL;
-	char *tempPosChar = strchr(str, chr);
-
- 	while(tempPosChar != NULL){
-		posChar = tempPosChar;
-
- 		tempPosChar = strchr(tempPosChar+1, chr);
-	}
-	if(posChar==NULL)
-		return 0;
-
- 	return (int) (posChar-str);
-}
 
 void* joinVideo(){
 	char video[] = "Video";
@@ -506,7 +561,7 @@ void* joinVideo(){
  		de->d_name[lastDotChar] = '\0';
 		encrypt(de->d_name);
 		sprintf(filePath, "%s/%s", videoPath, de->d_name);
-		printf("==========FILEPATHNYA=========%s", filePath);
+		printf("==========FILEPATHNYA=========%s\n", filePath);
 		if (access(filePath, F_OK) != -1)
 			continue;
 		
