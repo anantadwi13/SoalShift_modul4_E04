@@ -465,9 +465,14 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 		return res;
 
 	printf("===============FILEPATH========%s\n", path);
-	char backup[] = "Backup";
+	char backup[] = "Backup", pathBackup[1000];
 	encrypt(backup);
-	sprintf(temp, "%s/%s", dirpath, backup);
+	strncpy(pathBackup, path, getLastCharPos(path, '/'));
+	pathBackup[getLastCharPos(path, '/')] = '\0';
+	sprintf(temp, "%s/%s", pathBackup, backup);
+	strcpy(pathBackup, temp);
+	sprintf(temp, "%s%s", dirpath, pathBackup);
+	printf("==================PATH BACKUP ===========%s\n", pathBackup);
 	mkdir(temp, 0777);
 
 
@@ -475,11 +480,10 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 	char filePathWithoutExt[1000], ext[100], timestamp[1000], fileNameBackup[1000], ch;
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
-	sprintf(timestamp, "%d-%d-%d_%02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	sprintf(timestamp, "%04d-%02d-%02d_%02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	int posSlash = getLastCharPos(path, '/');
 	int posDot = getLastCharPos(path, '.');
-	int lenPath = strlen(path);
 	
 	if (posDot==0) {
 		posDot = strlen(path);
@@ -494,8 +498,8 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 	filePathWithoutExt[posDot-(posSlash+1)] = '\0';
 	
 	sprintf(fileNameBackup,"%s_%s%s", filePathWithoutExt, timestamp, ext);
-	// printf("===============PATH========%s\n", path);
-	// printf("===============PATH========%d=====%d\n", posSlash, posDot);
+	printf("===============PATH========%s\n", path);
+	printf("===============PATH========%d=====%d\n", posSlash, posDot);
 	printf("===============FILEPATH EDIT=======%s\n", fileNameBackup);
 	encrypt(fileNameBackup);
 	encrypt(path);
@@ -503,8 +507,8 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 	printf("==========DIR SOURCE========%s\n", temp);
 	FILE *source = fopen(temp, "r");
 
-	sprintf(temp, "%s/%s/%s", dirpath, backup, fileNameBackup);
-	//printf("==========DIR TARGET========%s\n", temp);
+	sprintf(temp, "%s%s/%s", dirpath, pathBackup, fileNameBackup);
+	printf("==========DIR TARGET========%s\n", temp);
 	FILE *target = fopen(temp, "w");
 
 	while ((ch = fgetc(source)) != EOF)
