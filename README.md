@@ -32,7 +32,7 @@ char encrypt(char *x)
 				if(ptr) 
 				{
 						ind = ptr - cipher;
-						x[i] = cipher[(ind + 17) % strlen(cipher)];
+						x[i] = cipher[(ind + key) % strlen(cipher)];
 				}
 		}
 
@@ -52,7 +52,7 @@ char decrypt(char *y)
 
 				if(ptr) 
 				{
-						ind = ptr - cipher - 17;
+						ind = ptr - cipher - key;
 						if (ind < 0)
 						{
 								ind = ind + strlen(cipher);
@@ -118,6 +118,7 @@ else
 	res = open(fpath, fi->flags, mode);
 }
 ```
+Sama seperti sebelumnya, jika didalam folder YOUTUBER, maka file akan diganti permissionnya menjadi 0640.
 
 Kemudian untuk menambahkan extension .iz1 akan digunakan pengecekan ini saat sebelum encrypt:
 
@@ -127,4 +128,5 @@ if(strstr(path,"/YOUTUBER") != 0)
 	strcat(path,".iz1");
 }
 ```
+Tujuannya adalah untuk menambahkan .iz1 ke file yang ada di dalam folder YOUTUBER
 
