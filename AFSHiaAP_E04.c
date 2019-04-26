@@ -494,6 +494,7 @@ void* joinVideo(){
 	while(i < n){
 		de = fileList[i];
 		i++;
+		decrypt(de->d_name);
 		int lastDotChar = getLastCharPos(de->d_name, '.');
 		if (de->d_type != DT_REG)
 			continue;
@@ -501,18 +502,34 @@ void* joinVideo(){
  		if (lastDotChar==0 || strlen(de->d_name)<4 || !((de->d_name[lastDotChar-3]=='m' && de->d_name[lastDotChar-2]=='k' && de->d_name[lastDotChar-1]=='v') || 
 			(de->d_name[lastDotChar-3]=='m' && de->d_name[lastDotChar-2]=='p' && de->d_name[lastDotChar-1]=='4')))
 			continue;
-
- 		sprintf(filePath, "%s/%s", dirpath, de->d_name);
-		FILE* source = fopen(filePath, "r");
-
+		
  		de->d_name[lastDotChar] = '\0';
+		encrypt(de->d_name);
 		sprintf(filePath, "%s/%s", videoPath, de->d_name);
+		printf("==========FILEPATHNYA=========%s", filePath);
+		if (access(filePath, F_OK) != -1)
+			continue;
+		
 		FILE* target = fopen(filePath, "a");
 
- 		while ((ch = fgetc(source)) != EOF)
-			fprintf(target, "%c", ch);
+		decrypt(de->d_name);
+		for(int i = 0; i <= 999; i++)
+		{
+			char namaFile[1000];
+			sprintf(namaFile, "%s.%03d",de->d_name, i);
+			encrypt(namaFile);
 
- 		fclose(source);
+ 			sprintf(filePath, "%s/%s", dirpath, namaFile);
+			if (access(filePath, F_OK) < 0)
+				break;
+
+			FILE* source = fopen(filePath, "r");
+
+			while ((ch = fgetc(source)) != EOF)
+				fprintf(target, "%c", ch);
+
+			fclose(source);
+		}
 		fclose(target);
 	}
 
