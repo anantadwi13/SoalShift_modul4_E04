@@ -2,21 +2,22 @@
 #include <fuse.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <pthread.h>
 #include <pwd.h>
 #include <grp.h>
-#include <sys/stat.h>
 
 static const char *dirpath = "/home/arisatox/shift4";
 char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
 pthread_t tid;
 
-char decrypt(char *x)
+char encrypt(char *x)
 {
 		int ind, i;
 		char *ptr;
@@ -35,7 +36,7 @@ char decrypt(char *x)
 		return *x;
 }
 
-char encrypt(char *y)
+char decrypt(char *y)
 {
 		int ind, i;
 		char *ptr;
@@ -58,11 +59,124 @@ char encrypt(char *y)
 		return *y;
 }
 
-static int xmp_mkdir(const char *path, mode_t mode)
+static int xmp_chmod(const char *path, mode_t mode)
+{
+	int res;
+	char fpath[1000], temp[1000];
+	strcpy(temp, path);
+	if(strstr(path,"/YOUTUBER") != 0 && strstr(path,".iz1") != 0)
+	{
+		printf("----------------------------%s---------------------------\n", temp);
+		printf("----------------------------MASUK YOUTUBER---------------------------\n");
+
+		pid_t child_id;
+
+		child_id = fork();
+
+		if (child_id == 0) 
+		{
+			// this is child
+			
+			char *argv[] = {"zenity", "--error", "--text", "File ekstensi iz1 tidak boleh diubah permissionnya.", NULL};
+			execv("/usr/bin/zenity", argv);
+		} 
+		else 
+		{
+			// this is parent
+		
+			return 0;
+		}
+		
+	}
+	
+	encrypt(temp);
+
+	if(strcmp(temp,"/") == 0)
+	{
+		path=dirpath;
+		sprintf(fpath,"%s",path);
+	}
+	else sprintf(fpath, "%s%s",dirpath,temp);
+
+	res = chmod(fpath, mode);
+	
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+ static int xmp_create(const char *path, mode_t mode,
+                       struct fuse_file_info *fi)
+ {
+        char fpath[1000], temp[1000];
+
+		if(strstr(path,"/YOUTUBER") != 0)
+		{
+			strcat(path,".iz1");
+		}
+		
+		strcpy(temp, path);
+		encrypt(temp);
+
+		if(strcmp(temp,"/") == 0)
+		{
+			path=dirpath;
+			sprintf(fpath,"%s",path);
+		}
+		else sprintf(fpath, "%s%s",dirpath,temp);
+			
+		int res;
+
+		if(strstr(path,"/YOUTUBER") != 0)
+		{
+			res = open(fpath, fi->flags, 0640 );
+		}
+		else
+		{
+			res = open(fpath, fi->flags, mode);
+		}
+ 
+        if (res == -1)
+                return -errno;
+ 
+        fi->fh = res;
+        return 0;
+ }
+
+static int xmp_truncate(const char *path, off_t size)
 {
 	char fpath[1000], temp[1000];
 	strcpy(temp, path);
-	decrypt(temp);
+	encrypt(temp);
+
+	if(strcmp(temp,"/") == 0)
+	{
+		path=dirpath;
+		sprintf(fpath,"%s",path);
+	}
+	else sprintf(fpath, "%s%s",dirpath,temp);
+	
+	int res;
+
+	res = truncate(fpath, size);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xmp_utimens(const char *path, const struct timespec ts[2])
+{
+	char fpath[1000], temp[1000];
+
+		if(strstr(path,"/YOUTUBER") != 0)
+		{
+			strcat(path,".iz1");
+		}
+		
+		strcpy(temp, path);
+		encrypt(temp);
 
 	if(strcmp(temp,"/") == 0)
 	{
@@ -73,7 +187,82 @@ static int xmp_mkdir(const char *path, mode_t mode)
 
 	int res;
 
-	res = mkdir(fpath, mode);
+	res = utimensat(0, fpath, ts, AT_SYMLINK_NOFOLLOW);
+	
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xmp_mkdir(const char *path, mode_t mode)
+{
+	char fpath[1000], temp[1000];
+	strcpy(temp, path);
+	encrypt(temp);
+
+	if(strcmp(temp,"/") == 0)
+	{
+		path=dirpath;
+		sprintf(fpath,"%s",path);
+	}
+	else sprintf(fpath, "%s%s",dirpath,temp);
+
+	int res;
+
+	if(strstr(path,"/YOUTUBER") != 0)
+	{
+		res = mkdir(fpath, 0750);
+	}
+	else
+	{
+		res = mkdir(fpath, mode);
+	}
+	
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xmp_rmdir(const char *path)
+{
+	char fpath[1000], temp[1000];
+	strcpy(temp, path);
+	encrypt(temp);
+
+	if(strcmp(temp,"/") == 0)
+	{
+		path=dirpath;
+		sprintf(fpath,"%s",path);
+	}
+	else sprintf(fpath, "%s%s",dirpath,temp);
+	
+	int res;
+
+	res = rmdir(fpath);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xmp_unlink(const char *path)
+{
+	char fpath[1000], temp[1000];
+	strcpy(temp, path);
+	encrypt(temp);
+
+	if(strcmp(temp,"/") == 0)
+	{
+		path=dirpath;
+		sprintf(fpath,"%s",path);
+	}
+	else sprintf(fpath, "%s%s",dirpath,temp);
+
+	int res;
+
+	res = unlink(fpath);
 	if (res == -1)
 		return -errno;
 
@@ -82,20 +271,34 @@ static int xmp_mkdir(const char *path, mode_t mode)
 
 static int xmp_getattr(const char *path, struct stat *stbuf)
 {
-  int res;
+  	int res; 
+	//int len;
 	char fpath[1000], temp[1000];
 
 	strcpy(temp, path);
 
-	decrypt(temp);
+	/*
+	len = strlen(temp);
+	//printf("TEMP2 ---------------------- %s %d\n", temp2, (int)strlen(temp2));	
 	
-	sprintf(fpath,"%s%s",dirpath,temp);
+	if (temp[len-1] == '1' && temp[len-2] == 'z' && temp[len-3] == 'i' && temp[len-4] == '.')
+	{
+		temp[len-4] = '\0';
+		//printf("MASUKKKKK SIIIINIIIIIIIIIIIIIIII -------------------------------- \n");
+		//printf("TEMP2 MODIFIED---------------------- %s %d\n", temp2, (int)strlen(temp2));
+	} 
+	 //printf("ORIGINAL ----------------------- %s %d\n", fpath, len);	
+	*/
 
+	encrypt(temp);
+	sprintf(fpath,"%s%s",dirpath,temp);
 	res = lstat(fpath, stbuf);
 
 	if (res == -1)
+	{
 		return -errno;
-
+	}
+		
 	return 0;
 }
 
@@ -104,7 +307,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 {
   	char fpath[1000], temp[1000];
 	strcpy(temp, path);
-	decrypt(temp);
+	encrypt(temp);
 
 	if(strcmp(temp,"/") == 0)
 	{
@@ -124,8 +327,9 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	if (dp == NULL)
 		return -errno;
 
-	char pathFileMiris[200];
-	sprintf(pathFileMiris, "%s/filemiris.txt", dirpath);
+	char pathFileMiris[200], nameFileMiris[] = "filemiris.txt";
+	encrypt(nameFileMiris);
+	sprintf(pathFileMiris, "%s/%s", dirpath, nameFileMiris);
 	FILE *filemiris = fopen(pathFileMiris, "a");
 
 	while ((de = readdir(dp)) != NULL) {
@@ -134,6 +338,11 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		st.st_ino = de->d_ino;
 		st.st_mode = de->d_type << 12;
 
+		if ( strcmp(de->d_name,".") == 0 || strcmp(de->d_name,"..") == 0 )
+		{
+			continue;
+		}
+
 		sprintf(temp, "%s/%s", fpath, de->d_name);
 		stat(temp, &info);
 		struct passwd *pw = getpwuid(info.st_uid);
@@ -141,17 +350,30 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		int readable = access(temp, R_OK);			//return 0 if it is readable
 		char date[30];
 
-		if (de->d_type == DT_REG && strcmp(temp, pathFileMiris)!=0 && readable!=0 && (strcmp(pw->pw_name, "chipset") || strcmp(pw->pw_name, "ic_controller")) && strcmp(gr->gr_name, "rusak")) {
+ 		if (de->d_type == DT_REG && strcmp(temp, pathFileMiris)!=0 && readable!=0 && (strcmp(pw->pw_name, "chipset") || strcmp(pw->pw_name, "ic_controller")) && strcmp(gr->gr_name, "rusak")) {
 			strftime(date, 30, "%Y-%m-%d %H:%M:%S", localtime(&(info.st_atime)));
+			decrypt(de->d_name);
 			fprintf(filemiris, "%s\t\t%d\t\t%d\t\t%s\n", de->d_name, gr->gr_gid, pw->pw_uid, date);
 			remove(temp);
 			continue;
 		}
 
-		encrypt(de->d_name);
+		decrypt(de->d_name);
 
-		res = (filler(buf, de->d_name, &st, 0));
-			if(res!=0) break;
+		/*
+		printf("-----------------DNAME %s-------------------\n", de->d_name);
+		printf("-----------------FPATH %s-------------------\n", fpath);
+		/*
+		if(strstr(path,"/YOUTUBER") != 0)
+		{
+			if(S_ISREG(st.st_mode))
+        		strcat(de->d_name,".iz1");
+		}
+		*/
+
+		res = (filler(buf,de->d_name, &st, 0));
+		if(res!=0) break;
+		
 	}
 
 	fclose(filemiris);
@@ -162,9 +384,9 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 		    struct fuse_file_info *fi)
 {
-  char fpath[1000], temp[1000];
+  	char fpath[1000], temp[1000];
 	strcpy(temp, path);
-	decrypt(temp);
+	encrypt(temp);
 
 	if(strcmp(path,"/") == 0)
 	{
@@ -173,7 +395,7 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 	}
 	else sprintf(fpath, "%s%s",dirpath,temp);
 	int res = 0;
-  int fd = 0 ;
+  	int fd = 0 ;
 
 	(void) fi;
 	fd = open(fpath, O_RDONLY);
@@ -188,34 +410,80 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 	return res;
 }
 
+static int xmp_write(const char *path, const char *buf, size_t size,
+		     off_t offset, struct fuse_file_info *fi)
+{
+	char fpath[1000], temp[1000];
+	
+	if(strstr(path,"/YOUTUBER") != 0)
+	{
+		strcat(path,".iz1");
+	}
+	strcpy(temp, path);	
+	encrypt(temp);
+
+	if(strcmp(path,"/") == 0)
+	{
+		path=dirpath;
+		sprintf(fpath,"%s",path);
+	}
+	else sprintf(fpath, "%s%s",dirpath,temp);
+
+	int fd;
+	int res;
+
+	(void) fi;
+	fd = open(fpath, O_WRONLY);
+	if (fd == -1)
+		return -errno;
+
+	res = pwrite(fd, buf, size, offset);
+	if (res == -1)
+		res = -errno;
+
+	close(fd);
+	return res;
+}
+
 static struct fuse_operations xmp_oper = {
 	.getattr	= xmp_getattr,
 	.readdir	= xmp_readdir,
 	.read		= xmp_read,
 	.mkdir		= xmp_mkdir,
+	.create		= xmp_create,
+	.chmod		= xmp_chmod,
+	.utimens	= xmp_utimens,
+	.unlink		= xmp_unlink,
+	.rmdir		= xmp_rmdir,
+	.write		= xmp_write,
+	.truncate	= xmp_truncate,
 };
 
 int getLastCharPos(char *str, char chr){
 	char *posChar = NULL;
 	char *tempPosChar = strchr(str, chr);
-	
-	while(tempPosChar != NULL){
+
+ 	while(tempPosChar != NULL){
 		posChar = tempPosChar;
 
-		tempPosChar = strchr(tempPosChar+1, chr);
+ 		tempPosChar = strchr(tempPosChar+1, chr);
 	}
 	if(posChar==NULL)
 		return 0;
 
-	return (int) (posChar-str);
+ 	return (int) (posChar-str);
 }
 
 void* joinVideo(){
+	char video[] = "Video";
 	char videoPath[1000], filePath[1000], ch;
-	sprintf(videoPath, "%s/g[xO#",dirpath);
+
+	encrypt(video);
+	sprintf(videoPath, "%s/%s",dirpath, video);
+
 	mkdir(videoPath, 0777);
 
-	DIR *dirvideo;
+ 	DIR *dirvideo;
 	struct dirent *de, **fileList;
 	dirvideo = opendir(videoPath);
 	if (dirvideo == NULL) {
@@ -229,41 +497,43 @@ void* joinVideo(){
 		int lastDotChar = getLastCharPos(de->d_name, '.');
 		if (de->d_type != DT_REG)
 			continue;
-		
-		if (lastDotChar==0 || strlen(de->d_name)<4 || !((de->d_name[lastDotChar-3]=='m' && de->d_name[lastDotChar-2]=='k' && de->d_name[lastDotChar-1]=='v') || 
+
+ 		if (lastDotChar==0 || strlen(de->d_name)<4 || !((de->d_name[lastDotChar-3]=='m' && de->d_name[lastDotChar-2]=='k' && de->d_name[lastDotChar-1]=='v') || 
 			(de->d_name[lastDotChar-3]=='m' && de->d_name[lastDotChar-2]=='p' && de->d_name[lastDotChar-1]=='4')))
 			continue;
 
-		sprintf(filePath, "%s/%s", dirpath, de->d_name);
+ 		sprintf(filePath, "%s/%s", dirpath, de->d_name);
 		FILE* source = fopen(filePath, "r");
 
-		de->d_name[lastDotChar] = '\0';
+ 		de->d_name[lastDotChar] = '\0';
 		sprintf(filePath, "%s/%s", videoPath, de->d_name);
 		FILE* target = fopen(filePath, "a");
 
-		while ((ch = fgetc(source)) != EOF)
-			//if (ch!='\n') 
-				fputc(ch, target);
+ 		while ((ch = fgetc(source)) != EOF)
+			fprintf(target, "%c", ch);
 
-		fclose(source);
+ 		fclose(source);
 		fclose(target);
 	}
-	
-	return NULL;
+
+ 	return NULL;
 }
 
 void deleteVideo(){
+	char video[] = "Video";
 	char videoPath[1000], filePath[1000];
-	sprintf(videoPath, "%s/g[xO#",dirpath);
 
-	DIR *dirVideo;
+	encrypt(video);
+	sprintf(videoPath, "%s/%s",dirpath, video);
+
+ 	DIR *dirVideo;
 	struct dirent *de;
 	dirVideo = opendir(videoPath);
 	if (dirVideo == NULL) {
 		return;
 	}
 
-	while((de = readdir(dirVideo)) != NULL){
+ 	while((de = readdir(dirVideo)) != NULL){
 		if (de->d_type == DT_REG) {
 			sprintf(filePath, "%s/%s", videoPath, de->d_name);
 			remove(filePath);
