@@ -8,6 +8,9 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/stat.h>
 
 static const char *dirpath = "/home/arisatox/shift4";
 char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
@@ -121,11 +124,29 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	if (dp == NULL)
 		return -errno;
 
+	char pathFileMiris[200];
+	sprintf(pathFileMiris, "%s/filemiris.txt", dirpath);
+	FILE *filemiris = fopen(pathFileMiris, "a");
+
 	while ((de = readdir(dp)) != NULL) {
-		struct stat st;
+		struct stat st, info;
 		memset(&st, 0, sizeof(st));
 		st.st_ino = de->d_ino;
 		st.st_mode = de->d_type << 12;
+
+		sprintf(temp, "%s/%s", fpath, de->d_name);
+		stat(temp, &info);
+		struct passwd *pw = getpwuid(info.st_uid);
+		struct group  *gr = getgrgid(info.st_gid);
+		int readable = access(temp, R_OK);			//return 0 if it is readable
+		char date[30];
+
+		if (de->d_type == DT_REG && strcmp(temp, pathFileMiris)!=0 && readable!=0 && (strcmp(pw->pw_name, "chipset") || strcmp(pw->pw_name, "ic_controller")) && strcmp(gr->gr_name, "rusak")) {
+			strftime(date, 30, "%Y-%m-%d %H:%M:%S", localtime(&(info.st_atime)));
+			fprintf(filemiris, "%s\t\t%d\t\t%d\t\t%s\n", de->d_name, gr->gr_gid, pw->pw_uid, date);
+			remove(temp);
+			continue;
+		}
 
 		encrypt(de->d_name);
 
@@ -133,6 +154,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			if(res!=0) break;
 	}
 
+	fclose(filemiris);
 	closedir(dp);
 	return 0;
 }
