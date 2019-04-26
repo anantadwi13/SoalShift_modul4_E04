@@ -14,7 +14,8 @@
 #include <grp.h>
 #include <time.h>
 
-static const char *dirpath = "/home/arisatox/shift4";
+int key;
+static const char *dirpath = "/home/arisatox/Source";
 char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
 pthread_t tid;
 
@@ -45,7 +46,7 @@ char encrypt(char *x)
 				if(ptr) 
 				{
 						ind = ptr - cipher;
-						x[i] = cipher[(ind + 17) % strlen(cipher)];
+						x[i] = cipher[(ind + key) % strlen(cipher)];
 				}
 		}
 
@@ -63,7 +64,7 @@ char decrypt(char *y)
 
 				if(ptr) 
 				{
-						ind = ptr - cipher - 17;
+						ind = ptr - cipher - key;
 						if (ind < 0)
 						{
 								ind = ind + strlen(cipher);
@@ -620,6 +621,8 @@ void deleteVideo(){
 
 int main(int argc, char *argv[])
 {
+	printf("Input key: ");
+	scanf("%d", &key);
 	umask(0);
 	pthread_create(&tid,NULL,&joinVideo,NULL);
 	fuse_main(argc, argv, &xmp_oper, NULL);
