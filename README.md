@@ -79,11 +79,11 @@ Jawab:
 
 Untuk membuat folder youtuber, menggunakan fungsi mkdir yang sudah diimplementasikan sebelumnya. Pada saat mkdir, dilakukan enkripsi terlebih dahulu dengan cara:
 
+```
 char fpath[1000], temp[1000];
 strcpy(temp, path);
 encrypt(temp);
 
-```
 if(strcmp(temp,"/") == 0)
 {
 	path=dirpath;
@@ -132,6 +132,7 @@ Tujuannya adalah untuk menambahkan .iz1 ke file yang ada di dalam folder YOUTUBE
 
 Kemudian, dalam chmod ditambahi kondisi lagi agar file berekstensi .iz1 tidak bisa di chmod. Caranya adalah:
 
+```
 if(strstr(path,"/YOUTUBER") != 0 && strstr(path,".iz1") != 0)
 {
 	pid_t child_id;
@@ -153,5 +154,5 @@ if(strstr(path,"/YOUTUBER") != 0 && strstr(path,".iz1") != 0)
 	}
 
 }
-
+```
 Digunakan fork untuk bisa melakukan exec di child nya. Untuk menampilkan file error, maka digunakan zenity. Zenity nanti akan mengeluarkan popup error.
