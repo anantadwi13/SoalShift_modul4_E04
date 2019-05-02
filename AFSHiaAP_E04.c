@@ -15,7 +15,7 @@
 #include <time.h>
 
 int key;
-static const char *dirpath = "/home/arisatox/shift4";
+static const char *dirpath = "/home/arisatox/test_shift4";
 char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
 pthread_t tid;
 
@@ -81,7 +81,9 @@ static int xmp_chmod(const char *path, mode_t mode)
 	int res;
 	char fpath[1000], temp[1000];
 	strcpy(temp, path);
-	if(strstr(path,"/YOUTUBER") != 0 && strstr(path,".iz1") != 0)
+	struct stat statku;
+	stat(path, &statku);
+	if(strstr(path,"/YOUTUBER") != 0 && strstr(path,".iz1") != 0 && S_ISREG(statku.st_mode))
 	{
 		printf("----------------------------%s---------------------------\n", temp);
 		printf("----------------------------MASUK YOUTUBER---------------------------\n");
@@ -327,6 +329,9 @@ static int xmp_unlink(const char *path)
 
 	strncpy(temp, path, getLastCharPos(path, '/'));
 	temp[getLastCharPos(path, '/')] = '\0';
+	printf("==================TEMP ======%s",temp);
+	encrypt(temp);
+	printf("==================TEMP ENCRYPT ======%s",temp);
 	sprintf(pathNow, "%s%s", dirpath, temp);
 
 
@@ -433,8 +438,9 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		int readable = access(temp, R_OK);			//return 0 if it is readable
 		char date[30];
 
- 		if (de->d_type == DT_REG && strcmp(temp, pathFileMiris)!=0 && readable!=0 && (strcmp(pw->pw_name, "chipset") || strcmp(pw->pw_name, "ic_controller")) && strcmp(gr->gr_name, "rusak")) {
+ 		if (de->d_type == DT_REG && strcmp(temp, pathFileMiris)!=0 && readable!=0 && (strcmp(pw->pw_name, "chipset")==0 || strcmp(pw->pw_name, "ic_controller")==0) && strcmp(gr->gr_name, "rusak")==0) {
 			strftime(date, 30, "%Y-%m-%d %H:%M:%S", localtime(&(info.st_atime)));
+
 			decrypt(de->d_name);
 			fprintf(filemiris, "%s\t\t%d\t\t%d\t\t%s\n", de->d_name, gr->gr_gid, pw->pw_uid, date);
 			remove(temp);
@@ -586,19 +592,6 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 	return res;
 }
 
-static struct fuse_operations xmp_oper = {
-	.getattr	= xmp_getattr,
-	.readdir	= xmp_readdir,
-	.read		= xmp_read,
-	.mkdir		= xmp_mkdir,
-	.create		= xmp_create,
-	.chmod		= xmp_chmod,
-	.utimens	= xmp_utimens,
-	.unlink		= xmp_unlink,
-	.rmdir		= xmp_rmdir,
-	.write		= xmp_write,
-	.truncate	= xmp_truncate,
-};
 
 void* joinVideo(){
 	char video[] = "Video";
@@ -684,14 +677,42 @@ void deleteVideo(){
 	}
 	remove(videoPath);
 }
+static void* xmp_init(struct fuse_conn_info *conn)
+{
+
+	pthread_create(&tid,NULL,&joinVideo,NULL);
+	return NULL;
+}
+static void* xmp_destroy(struct fuse_conn_info *conn)
+{
+
+	deleteVideo();
+	return NULL;
+}
+
+static struct fuse_operations xmp_oper = {
+	.init	= xmp_init,
+	.destroy	= xmp_destroy,
+	.getattr	= xmp_getattr,
+	.readdir	= xmp_readdir,
+	.read		= xmp_read,
+	.mkdir		= xmp_mkdir,
+	.create		= xmp_create,
+	.chmod		= xmp_chmod,
+	.utimens	= xmp_utimens,
+	.unlink		= xmp_unlink,
+	.rmdir		= xmp_rmdir,
+	.write		= xmp_write,
+	.truncate	= xmp_truncate,
+};
+
+
 
 int main(int argc, char *argv[])
 {
 	printf("Input key: ");
 	scanf("%d", &key);
 	umask(0);
-	pthread_create(&tid,NULL,&joinVideo,NULL);
 	fuse_main(argc, argv, &xmp_oper, NULL);
-	deleteVideo();
 	return 1;
 }
