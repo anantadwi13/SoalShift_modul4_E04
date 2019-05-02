@@ -15,7 +15,7 @@
 #include <time.h>
 
 int key;
-static const char *dirpath = "/home/arisatox/test_shift4";
+static const char *dirpath = "/home/anantadwi13/test_shift4";
 char cipher[] = "qE1~ YMUR2\"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\\8s;g<{3.u*W-0";
 pthread_t tid;
 
@@ -431,6 +431,13 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			continue;
 		}
 
+		decrypt(de->d_name);
+		int lastDotChar = getLastCharPos(de->d_name, '.');
+ 		if (de->d_type == DT_REG && strlen(de->d_name)>=4 && ((de->d_name[lastDotChar-3]=='m' && de->d_name[lastDotChar-2]=='k' && de->d_name[lastDotChar-1]=='v') || 
+			(de->d_name[lastDotChar-3]=='m' && de->d_name[lastDotChar-2]=='p' && de->d_name[lastDotChar-1]=='4')))
+			continue;
+		encrypt(de->d_name);
+
 		sprintf(temp, "%s/%s", fpath, de->d_name);
 		stat(temp, &info);
 		struct passwd *pw = getpwuid(info.st_uid);
@@ -625,15 +632,16 @@ void* joinVideo(){
  		de->d_name[lastDotChar] = '\0';
 		encrypt(de->d_name);
 		sprintf(filePath, "%s/%s", videoPath, de->d_name);
-		printf("==========FILEPATHNYA=========%s\n", filePath);
 		if (access(filePath, F_OK) != -1)
 			continue;
 		
-		FILE* target = fopen(filePath, "a");
+		printf("==========FILEPATHNYA=========%s\n", filePath);
+		FILE* target = fopen(filePath, "w");
 
 		decrypt(de->d_name);
 		for(int i = 0; i <= 999; i++)
 		{
+			int chardata;
 			char namaFile[1000];
 			sprintf(namaFile, "%s.%03d",de->d_name, i);
 			encrypt(namaFile);
@@ -641,13 +649,17 @@ void* joinVideo(){
  			sprintf(filePath, "%s/%s", dirpath, namaFile);
 			if (access(filePath, F_OK) < 0)
 				break;
+			printf("===============OPEN FILE====%s\n", filePath);
 
 			FILE* source = fopen(filePath, "r");
+			if (source==NULL)
+				break;
 
-			while ((ch = fgetc(source)) != EOF)
-				fprintf(target, "%c", ch);
+			while ((chardata = fgetc(source)) != EOF)
+				fputc(chardata, target);
 
 			fclose(source);
+			printf("===============COPYDONE FILE====%s\n", filePath);
 		}
 		fclose(target);
 	}
